@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+# ziggy launcher - self-bootstraps its dependencies, then runs the app.
+set -uo pipefail
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+    DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+    SOURCE="$(readlink "$SOURCE")"
+    case "$SOURCE" in
+        /*) ;;
+        *) SOURCE="$DIR/$SOURCE" ;;
+    esac
+done
+BIN_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+REPO="$(cd "$BIN_DIR/.." >/dev/null 2>&1 && pwd)"
+
+ZIGGY_HOME="${ZIGGY_HOME:-$HOME/.local/share/ziggy}"
+VENV="$ZIGGY_HOME/venv"
+PYTHON="${ZIGGY_PYTHON:-python3}"
+
+log() { printf '%s\n' "$*" >&2; }
+
+find_python() {
+    if command -v "$PYTHON" >/dev/null 2>&1; then
+        command -v "$PYTHON"
+    elif command -v python3 >/dev/null 2>&1; then
+        command -v python3
+    elif command -v python >/dev/null 2>&1; then
+        command -v python
+    fi
+}
+
+version_ok() {
+    "$1" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 9) else 1)' >/dev/null 2>&1
+}
+
+deps_ok() {
+    "$1" -c 'import rich, requests' >/dev/null 2>&1
+}
+
+download() {
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL "$1" -o "$2"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -qO "$2" "$1"
+    else
+        return 1
+    fi
+}
+
+setup_venv() {
+    local py="$1"
+    log "Setting up ziggy for first use (one time only)..."
+    mkdir -p "$ZIGGY_HOME"
+    rm -rf "$VENV"
+
+    if ! "$py" -m venv --without-pip "$VENV" >/dev/null 2>&1; then
+        if ! "$py" -m venv "$VENV" >/dev/null 2>&1; then
+            log "Could not create a virtual environment."
+            log "On Debian/Ubuntu:  sudo apt install python3-venv   then retry."
+            return 1
+        fi
+    fi
+
+    if [ ! -x "$VENV/bin/pip" ]; then
+        local getpip="$ZIGGY_HOME/get-pip.py"
+        if ! download "https://bootstrap.pypa.io/get-pip.py" "$getpip"; then
+            log "Could not download pip. Check your internet connection."
+            return 1
+        fi
+        if ! "$VENV/bin/python" "$getpip" >/dev/null 2>&1; then
+            log "Could not bootstrap pip."
+            return 1
+        fi
+    fi
+
+    log "Installing dependencies (rich, requests)..."
+    if ! "$VENV/bin/python" -m pip install --quiet --upgrade rich requests; then
+        log "Could not install dependencies."
+        return 1
+    fi
+    log "Setup complete."
+}
+
+py="$(find_python)"
+if [ -z "$py" ]; then
+    log "ziggy needs Python 3.9+. Install Python and try again."
+    exit 1
+fi
+if ! version_ok "$py"; then
+    log "ziggy needs Python 3.9 or newer (found: $("$py" --version 2>&1))."
+    exit 1
+fi
+
+PYBIN=""
+if [ -z "${ZIGGY_FORCE_VENV:-}" ]; then
+    if [ -x "$VENV/bin/python" ] && deps_ok "$VENV/bin/python"; then
+        PYBIN="$VENV/bin/python"
+    elif deps_ok "$py"; then
+        PYBIN="$py"
+    fi
+fi
+
+if [ -z "$PYBIN" ]; then
+    if ! setup_venv "$py"; then
+        exit 1
+    fi
+    PYBIN="$VENV/bin/python"
+fi
+
+exec env PYTHONPATH="$REPO${PYTHONPATH:+:$PYTHONPATH}" "$PYBIN" -m ziggy "$@"

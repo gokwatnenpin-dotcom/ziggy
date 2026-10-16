@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ziggy-cli"
+version = "0.1.0"
+description = "A small Codex-style coding assistant that lives in your terminal."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "ziggy" }]
+keywords = ["ai", "cli", "assistant", "coding", "openrouter", "agent"]
+dependencies = [
+    "rich>=13.0.0",
+    "requests>=2.28.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/OWNER/ziggy"
+
+[project.scripts]
+ziggy = "ziggy.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ziggy*"]
