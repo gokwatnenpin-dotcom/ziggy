@@ -5,7 +5,11 @@ from pathlib import Path
 
 from rich.prompt import Prompt
 
-CONFIG_DIR = Path.home() / ".config" / "ziggy"
+# Use %APPDATA% on Windows, otherwise ~/.config
+if os.name == 'nt':
+    CONFIG_DIR = Path(os.environ.get('APPDATA', Path.home() / 'AppData' / 'Roaming')) / 'ziggy'
+else:
+    CONFIG_DIR = Path.home() / ".config" / "ziggy"
 CONFIG_PATH = CONFIG_DIR / "config.json"
 
 DEFAULTS = {

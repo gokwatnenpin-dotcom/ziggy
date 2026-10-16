@@ -168,7 +168,7 @@ def tool_run_command(args, cfg):
         return "User denied running this command.", "denied"
     try:
         done = subprocess.run(
-            command, shell=True, capture_output=True, text=True, timeout=180
+            command, shell=True, capture_output=True, text=True, timeout=180, encoding='utf-8', errors='replace'
         )
     except subprocess.TimeoutExpired:
         return "Error: command timed out after 180s", "timeout"

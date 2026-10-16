@@ -5,8 +5,44 @@ A small Codex-style coding assistant that lives in your terminal.
 - Kiro-style animated startup and a rich, streaming chat UI
 - Reads, creates, and edits files, and can run shell commands (with your approval)
 - Multi-turn conversation that keeps going until you type `/exit`
+- Cross-platform: works on Windows, macOS, and Linux
 
 ## Install
+
+Ziggy needs Windows, macOS, or Linux with Python 3.9+ available.
+
+### Windows (PowerShell)
+
+Clone the repo and run the installer:
+
+```powershell
+git clone https://github.com/OWNER/ziggy.git
+cd ziggy
+.\install.ps1
+```
+
+This creates a `ziggy` shim in `%USERPROFILE%\.local\bin` and tells you if that
+directory needs to be added to your `PATH`. After that, just type:
+
+```powershell
+ziggy
+```
+
+You can also skip the installer and run the launcher in place:
+
+```powershell
+.\bin\ziggy.bat          # Command Prompt / double-click friendly
+.\bin\ziggy.ps1          # PowerShell
+```
+
+If running `.ps1` scripts is blocked, either use `ziggy.bat` or allow the
+script for your session:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+
+### macOS/Linux
 
 Clone the repo and run the installer:
 
@@ -24,8 +60,8 @@ ziggy
 
 On first run ziggy sets up a private Python environment (installing `rich` and
 `requests` for itself) and asks for your [OpenRouter](https://openrouter.ai/keys)
-API key. Nothing is installed system-wide: everything lives in
-`~/.local/share/ziggy` and `~/.config/ziggy`.
+API key. Nothing is installed system-wide: everything lives in a per-user data
+directory (see [Configuration](#configuration)).
 
 To update later, `cd` into the clone and `git pull`.
 
@@ -48,10 +84,21 @@ pip install --user git+https://github.com/OWNER/ziggy.git
 ## Setup
 
 On first run, ziggy asks for an [OpenRouter](https://openrouter.ai/keys) API key and
-stores it in `~/.config/ziggy/config.json`. You can also set it via environment:
+stores it in its config file:
+
+- Windows: `%APPDATA%\ziggy\config.json`
+- macOS/Linux: `~/.config/ziggy/config.json`
+
+You can also set it via environment:
 
 ```bash
+# macOS/Linux
 export ZIGGY_API_KEY="sk-or-..."
+```
+
+```powershell
+# Windows PowerShell
+$env:ZIGGY_API_KEY = "sk-or-..."
 ```
 
 ## Usage
@@ -83,7 +130,10 @@ ziggy can call these tools while it works (each is shown before it runs):
 
 ## Configuration
 
-Settings live in `~/.config/ziggy/config.json`:
+Settings live in the ziggy config file:
+
+- Windows: `%APPDATA%\ziggy\config.json`
+- macOS/Linux: `~/.config/ziggy/config.json`
 
 ```json
 {
